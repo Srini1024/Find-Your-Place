@@ -33,10 +33,9 @@ The app runs a **4-agent pipeline**:
 
 ---
 
-## 🛠️ Architecture 
+## 🛠️ Architecture
 
-![Architecture](results/Agentic%Pipeline%for%User-2026-02-26-163433.svg)
-
+![Architecture](results/Agentic%20Pipeline%20for%20User-2026-02-26-165909.svg)
 
 ---
 
@@ -53,10 +52,7 @@ Each recommendation card shows:
 - **Source links** — clickable citations
 
 ---
-##  🛠️ Architecture
-![AI Architecture](results/Agentic Pipeline for User-2026-02-26-163433.svg)
 
----
 ## 🛠️ Setup & Installation
 
 ### Prerequisites
@@ -132,10 +128,11 @@ Find-Your-Place/
 │   ├── css/style.css        # Styling
 │   └── js/app.js            # Frontend logic
 │
-└── results/                 # Demo screenshots
+└── results/                 # Demo screenshots & architecture diagrams
 ```
 
 ---
+
 ## 🧪 Testing
 
 Run the built-in test suite to verify agents are working:
