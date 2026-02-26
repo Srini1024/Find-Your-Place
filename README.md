@@ -33,6 +33,13 @@ The app runs a **4-agent pipeline**:
 
 ---
 
+## 🛠️ Architecture 
+
+![AI Pipeline](results/Agentic Pipeline for User-2026-02-26-163433.svg)
+
+
+---
+
 ## 📸 Demo
 
 ![Results View](results/Screenshot%202026-02-26%20101650.png)
@@ -173,4 +180,4 @@ This project is for educational and personal use.
 
 ---
 
-*Built with ❤️ using Flask, LangGraph, Tavily AI and Google Gemini.*
+*Built with ❤️ using Flask, LangGraph, Tavily AI, Google Gemini and Antigravity.*
