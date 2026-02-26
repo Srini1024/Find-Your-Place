@@ -35,7 +35,7 @@ The app runs a **4-agent pipeline**:
 
 ## 🛠️ Architecture 
 
-![AI Pipeline](results/Agentic Pipeline for User-2026-02-26-163433.svg)
+![Architecture](results/Agentic%Pipeline%for%User-2026-02-26-163433.svg)
 
 
 ---
