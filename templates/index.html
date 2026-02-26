@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalGuide — AI-Powered Local Discovery</title>
+  <meta name="description"
+    content="Discover the best restaurants, bars, cafes and attractions near you. AI-powered recommendations using real reviews from Reddit, blogs, and the web." />
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style-simple.css') }}" />
+</head>
+
+<body>
+  <!-- Animated background -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="LocalGuide Logo" />
+        </div>
+        <span class="logo-text">Local<span class="logo-accent">Guide</span></span>
+      </div>
+      <div class="header-actions">
+        <div class="location-pill" id="locationPill">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <path
+              d="M7 1C4.79 1 3 2.79 3 5c0 3.5 4 8 4 8s4-4.5 4-8c0-2.21-1.79-4-4-4zm0 5.5C6.17 6.5 5.5 5.83 5.5 5S6.17 3.5 7 3.5 8.5 4.17 8.5 5 7.83 6.5 7 6.5z" />
+          </svg>
+          <span id="locationText">Detecting location...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="main">
+    <section class="hero" id="heroSection">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>Powered by Tavily AI · Real Reviews · Zero Sponsored Results</span>
+        </div>
+        <h1 class="hero-title">
+          Find the <span class="gradient-text">perfect place</span><br />
+          wherever you are
+        </h1>
+        <p class="hero-subtitle">
+          Ask anything. Our AI searches Reddit, travel blogs, and the web to find<br />
+          the top 5 spots tailored just for you — no sponsored results.
+        </p>
+
+        <!-- Search Box -->
+        <div class="search-container">
+          <div class="search-box" id="searchBox">
+            <div class="search-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="2" />
+                <path d="M13 13L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <input type="text" id="searchInput" class="search-input"
+              placeholder="Best restaurants downtown... best rooftop bars... cozy cafes..." autocomplete="off"
+              maxlength="200" />
+            <button class="geo-btn" id="geoBtn" title="Use my location">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <circle cx="9" cy="9" r="4" stroke="currentColor" stroke-width="2" />
+                <line x1="9" y1="1" x2="9" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="9" y1="14" x2="9" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="1" y1="9" x2="4" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="14" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button class="search-btn" id="searchBtn">
+              <span class="search-btn-text">Discover</span>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Quick suggestions -->
+          <div class="suggestions">
+            <span class="suggestions-label">Try:</span>
+            <button class="suggestion-chip" data-query="best restaurants near me">🍽️ Best restaurants</button>
+            <button class="suggestion-chip" data-query="best bars for craft cocktails">🍸 Craft cocktail bars</button>
+            <button class="suggestion-chip" data-query="cozy coffee shops and cafes">☕ Cozy cafes</button>
+            <button class="suggestion-chip" data-query="best pubs with live music">🎵 Pubs with live music</button>
+            <button class="suggestion-chip" data-query="hidden gem restaurants">💎 Hidden gems</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature pills -->
+      <div class="feature-pills">
+        <div class="feature-pill">
+          <span class="pill-emoji">🔴</span>
+          <span>Reddit Reviews</span>
+        </div>
+        <div class="feature-pill">
+          <span class="pill-emoji">📝</span>
+          <span>Blog Posts</span>
+        </div>
+        <div class="feature-pill">
+          <span class="pill-emoji">🌐</span>
+          <span>Web Research</span>
+        </div>
+        <div class="feature-pill">
+          <span class="pill-emoji">🤖</span>
+          <span>AI Summary</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <section class="loading-section hidden" id="loadingSection">
+      <div class="pipeline-tracker">
+        <div class="pipeline-header">
+          <h2 class="pipeline-title">Finding your perfect places...</h2>
+          <p class="pipeline-subtitle" id="loadingSubtitle">Initializing AI agents</p>
+        </div>
+        <div class="pipeline-steps">
+          <div class="pipeline-step" id="step1">
+            <div class="step-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="2" />
+                <line x1="10" y1="2" x2="10" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="10" y1="15" x2="10" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="2" y1="10" x2="5" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="15" y1="10" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="step-info">
+              <div class="step-name">Geolocation Agent</div>
+              <div class="step-desc">Finding your coordinates</div>
+            </div>
+            <div class="step-status-icon"></div>
+          </div>
+          <div class="pipeline-connector" id="connector1"></div>
+          <div class="pipeline-step" id="step2">
+            <div class="step-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="8" r="5" stroke="currentColor" stroke-width="2" />
+                <path d="M4 17s0-3 6-3 6 3 6 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="step-info">
+              <div class="step-name">Discovery Agent</div>
+              <div class="step-desc">Scanning 5 nearby places</div>
+            </div>
+            <div class="step-status-icon"></div>
+          </div>
+          <div class="pipeline-connector" id="connector2"></div>
+          <div class="pipeline-step" id="step3">
+            <div class="step-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="2" />
+                <path d="M12 12L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="step-info">
+              <div class="step-name">Research Agent</div>
+              <div class="step-desc">Deep-diving Reddit & blogs</div>
+            </div>
+            <div class="step-status-icon"></div>
+          </div>
+          <div class="pipeline-connector" id="connector3"></div>
+          <div class="pipeline-step" id="step4">
+            <div class="step-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M10 2L12.09 7.26L18 8.27L14 12.14L14.93 18.02L10 15.27L5.07 18.02L6 12.14L2 8.27L7.91 7.26L10 2Z"
+                  stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              </svg>
+            </div>
+            <div class="step-info">
+              <div class="step-name">Recommender Agent</div>
+              <div class="step-desc">Crafting your Top 5</div>
+            </div>
+            <div class="step-status-icon"></div>
+          </div>
+        </div>
+        <div class="loading-bar-container">
+          <div class="loading-bar" id="loadingBar"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section hidden" id="resultsSection">
+      <div class="results-header">
+        <div class="results-meta">
+          <h2 class="results-title" id="resultsTitle">Top 5 Recommendations</h2>
+          <p class="results-subtitle" id="resultsSubtitle"></p>
+        </div>
+        <button class="new-search-btn" id="newSearchBtn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8H13M8 3L3 8L8 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          New Search
+        </button>
+      </div>
+
+      <!-- Metadata bar -->
+      <div class="metadata-bar" id="metadataBar"></div>
+
+      <!-- Cards Grid -->
+      <div class="cards-grid" id="cardsGrid"></div>
+    </section>
+
+    <!-- Error Section -->
+    <section class="error-section hidden" id="errorSection">
+      <div class="error-content">
+        <div class="error-icon">🗺️</div>
+        <h3 class="error-title" id="errorTitle">Couldn't find results</h3>
+        <p class="error-message" id="errorMessage"></p>
+        <button class="retry-btn" id="retryBtn">Try Again</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Place Detail Modal -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>
