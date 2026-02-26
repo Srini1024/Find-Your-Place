@@ -23,7 +23,6 @@ const els = {
   errorSection: () => document.getElementById('errorSection'),
   searchInput: () => document.getElementById('searchInput'),
   searchBtn: () => document.getElementById('searchBtn'),
-  geoBtn: () => document.getElementById('geoBtn'),
   locationText: () => document.getElementById('locationText'),
   locationPill: () => document.getElementById('locationPill'),
   loadingSubtitle: () => document.getElementById('loadingSubtitle'),
@@ -57,11 +56,9 @@ function showSection(name) {
 
 // ---- Geolocation ----
 function requestGeolocation() {
-  const btn = els.geoBtn();
-  btn.title = 'Requesting location...';
-
   if (!navigator.geolocation) {
     showToast('Geolocation is not supported by your browser.', 'error');
+    detectLocationSilently();
     return;
   }
 
@@ -70,7 +67,6 @@ function requestGeolocation() {
       state.lat = pos.coords.latitude;
       state.lon = pos.coords.longitude;
       state.geoGranted = true;
-      btn.classList.add('active');
 
       // Reverse geocode with Nominatim
       try {
@@ -93,6 +89,7 @@ function requestGeolocation() {
       let msg = 'Location access denied. We\'ll detect your location automatically.';
       if (err.code === 1) msg = 'Location permission denied. You can still search!';
       showToast(msg, 'info');
+      detectLocationSilently();
     },
     { timeout: 10000, maximumAge: 300000 }
   );
@@ -279,7 +276,7 @@ function renderResults(recommendations, metadata) {
     chips.forEach(c => {
       const chip = document.createElement('div');
       chip.className = 'meta-chip';
-      chip.innerHTML = `<span>${c.label}</span><span>${c.value}</span>`;
+      chip.innerHTML = `<span>${c.label} </span><span>${c.value}</span>`;
       metaBar.appendChild(chip);
     });
   }
@@ -340,7 +337,6 @@ function buildRecCard(rec, rank) {
           <div class="rec-badges">
             ${redditBadge}
             ${rec.category ? `<span class="badge badge-category">${escHtml(rec.category)}</span>` : ''}
-            ${rec.price_vibe ? `<span class="badge badge-price">${escHtml(rec.price_vibe)}</span>` : ''}
           </div>
         </div>
         ${rec.tagline ? `<div class="rec-tagline">${escHtml(rec.tagline)}</div>` : ''}
@@ -353,6 +349,15 @@ function buildRecCard(rec, rank) {
               What Reddit says
             </div>
             <div class="rec-reddit-text">${escHtml(rec.reddit_says || '')}</div>
+          </div>
+        ` : ''}
+        ${rec.web_says ? `
+          <div class="rec-reddit" style="border-color:rgba(14, 165, 233, 0.2);background:rgba(14, 165, 233, 0.04);margin-top:8px">
+            <div class="rec-reddit-label" style="color:var(--accent-blue, #0ea5e9)">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 11A5 5 0 106 1a5 5 0 000 10zM1 6h10M6 1c-1.38 0-2.5 2.24-2.5 5 0 2.76 1.12 5 2.5 5s2.5-2.24 2.5-5C8.5 3.24 7.38 1 6 1z" stroke="currentColor" stroke-width="1.2"/></svg>
+              What the Web says
+            </div>
+            <div class="rec-reddit-text">${escHtml(rec.web_says || '')}</div>
           </div>
         ` : ''}
         ${rec.insider_tip ? `
@@ -374,13 +379,13 @@ function buildRecCard(rec, rank) {
           </div>
           <div class="rec-actions">
             <a href="${mapsUrl}" class="action-btn action-btn-map" target="_blank" rel="noopener">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.07 1 2.5 2.57 2.5 4.5 2.5 7.38 6 11 6 11s3.5-3.62 3.5-6.5C9.5 2.57 7.93 1 6 1zm0 4.75a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.07 1 2.5 2.57 2.5 4.5 2.5 7.38 6 11 6 11s3.5-3.62 3.5-6.5C9.5 2.57 7.93 1 6 1zm0 4.75a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z" stroke="currentColor" stroke-width="1.2" /></svg>
               Map
             </a>
             ${websiteLink}
           </div>
+          ${sources ? `<div class="rec-sources">${sources}</div>` : ''}
         </div>
-        ${sources ? `<div class="rec-sources">${sources}</div>` : ''}
       </div>
     </div>
   `;
@@ -415,7 +420,6 @@ function openModal(rec, rank) {
       
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
         ${rec.category ? `<span class="badge badge-category">${escHtml(rec.category)}</span>` : ''}
-        ${rec.price_vibe ? `<span class="badge badge-price">${escHtml(rec.price_vibe)}</span>` : ''}
         ${rec.has_reddit ? `<span class="badge badge-reddit">🔴 Reddit Verified</span>` : ''}
         ${rec.distance ? `<span class="badge" style="background:rgba(232,98,10,0.1);color:#FDBA74;border:1px solid rgba(232,98,10,0.22)">📍 ${escHtml(rec.distance)}</span>` : ''}
       </div>
@@ -443,6 +447,13 @@ function openModal(rec, rank) {
         <div class="rec-reddit" style="margin-bottom:16px">
           <div class="rec-reddit-label">🔴 What Reddit says</div>
           <div class="rec-reddit-text">${escHtml(rec.reddit_says)}</div>
+        </div>
+      ` : ''}
+
+      ${rec.web_says ? `
+        <div class="rec-reddit" style="border-color:rgba(14, 165, 233, 0.2);background:rgba(14, 165, 233, 0.04);margin-bottom:16px">
+          <div class="rec-reddit-label" style="color:var(--accent-blue, #0ea5e9)">🌐 What the Web says</div>
+          <div class="rec-reddit-text">${escHtml(rec.web_says)}</div>
         </div>
       ` : ''}
 
@@ -581,9 +592,6 @@ function initEventListeners() {
     if (e.key === 'Enter') performSearch(els.searchInput().value);
   });
 
-  // Geolocation button
-  els.geoBtn().addEventListener('click', requestGeolocation);
-
   // Suggestion chips
   document.querySelectorAll('.suggestion-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -626,7 +634,7 @@ function initEventListeners() {
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
-  detectLocationSilently();
+  requestGeolocation();
 
   // Animate hero elements in
   setTimeout(() => {

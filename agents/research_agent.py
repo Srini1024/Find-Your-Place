@@ -1,13 +1,3 @@
-"""
-Node 3: Research Agent
-For each discovered place, does TWO Tavily searches:
-  1. General reviews  — Yelp, TripAdvisor, blogs, editorial sites
-  2. Reddit-only pass — using Tavily's include_domains=["reddit.com"]
-
-NOTE: Tavily does NOT support Google-style site: operators in query strings.
-      The correct approach is the include_domains / exclude_domains API params.
-"""
-
 import os
 import logging
 import time
@@ -20,21 +10,13 @@ TAVILY_SEARCH_DEPTH = "advanced"
 MAX_RESULTS_PER_PLACE = 5
 
 
-# ---------------------------------------------------------------------------
-# Tavily client
-# ---------------------------------------------------------------------------
-
-def get_tavily_client() -> TavilyClient:
-    """Initialize and return Tavily client."""
+def get_tavily_client():
+    """Initialize and return Tavily clients."""
     api_key = os.getenv("TAVILY_API_KEY")
     if not api_key:
         raise ValueError("TAVILY_API_KEY not set in environment")
     return TavilyClient(api_key=api_key)
 
-
-# ---------------------------------------------------------------------------
-# Query builders — clean, no site: hacks
-# ---------------------------------------------------------------------------
 
 def build_general_query(place: dict, location_name: str, original_query: str) -> str:
     """
@@ -50,7 +32,6 @@ def build_general_query(place: dict, location_name: str, original_query: str) ->
     if cuisine:
         base += f" {cuisine}"
 
-    # Context angle based on type
     if amenity in ("restaurant", "fast_food", "cafe"):
         angle = "review what to order best dishes"
     elif amenity in ("bar", "pub", "nightclub", "brewery"):
@@ -75,11 +56,6 @@ def build_reddit_query(place: dict, location_name: str, original_query: str) -> 
     name = place["name"]
     city = location_name.split(",")[0].strip() if "," in location_name else location_name
     return f"{name} {city} recommendations thoughts review"
-
-
-# ---------------------------------------------------------------------------
-# Source classification & scoring
-# ---------------------------------------------------------------------------
 
 def classify_source(url: str) -> str:
     """Classify a URL into a source type category."""
@@ -112,11 +88,6 @@ def calculate_research_score(results: list[dict]) -> float:
 
     return round(min(avg_score + diversity_bonus + reddit_bonus + editorial_bonus + yelp_bonus, 1.0), 3)
 
-
-# ---------------------------------------------------------------------------
-# Single-place research — two Tavily passes
-# ---------------------------------------------------------------------------
-
 def research_single_place(
     tavily: TavilyClient,
     place: dict,
@@ -140,7 +111,6 @@ def research_single_place(
     general_query = build_general_query(place, location_name, original_query)
     reddit_query  = build_reddit_query(place, location_name, original_query)
 
-    # ── Pass 1: General reviews (Yelp, TripAdvisor, blogs) ───────────────
     try:
         logger.info(f"[General] '{name}' → {general_query[:80]}...")
         result = tavily.search(
@@ -181,7 +151,7 @@ def research_single_place(
         reddit_result = tavily.search(
             query=reddit_query,
             search_depth="basic",             # basic is enough for Reddit threads
-            max_results=3,
+            max_results=5,
             include_answer=False,
             include_raw_content=False,
             include_domains=["reddit.com"],   # ← correct Tavily API param
@@ -200,27 +170,29 @@ def research_single_place(
                 })
                 sources.append(url)
                 if content:
-                    reddit_snippets.append(content[:400])
+                    reddit_snippets.append(content[:600])
 
         time.sleep(0.4)
 
     except Exception as e:
         logger.error(f"Reddit research failed for '{name}': {e}")
 
-    # Build combined research summary
-    # Reddit snippets are surfaced separately so the recommender can
-    # directly populate the reddit_says field
     all_snippets = sentiment_snippets[:4] + reddit_snippets[:2]
     combined_text = " | ".join(all_snippets) if all_snippets else "No reviews found."
 
     has_reddit = any("reddit.com" in s for s in sources)
+    
+    # Calculate web summary separate from reddit summary
+    web_snippets = sentiment_snippets[:5]
+    web_summary_text = " | ".join(web_snippets) if web_snippets else "No reviews found."
 
     return {
         **place,
         "research_results":  research_results,
         "research_summary":  combined_text[:1500],
-        "reddit_summary":    " | ".join(reddit_snippets[:2]) if reddit_snippets else "",
-        "sources":           list(dict.fromkeys(sources))[:6],  # ordered dedup
+        "web_summary":       web_summary_text[:1500],
+        "reddit_summary":    " | ".join(reddit_snippets[:4]) if reddit_snippets else "",
+        "sources":           list(dict.fromkeys(sources))[:6], 
         "source_count":      len(research_results),
         "has_reddit":        has_reddit,
         "has_blog":          any(classify_source(s) == "blog" for s in sources),
@@ -228,15 +200,8 @@ def research_single_place(
     }
 
 
-# ---------------------------------------------------------------------------
-# Main agent entry point
-# ---------------------------------------------------------------------------
-
 def run_research_agent(state: dict) -> dict:
-    """
-    Enriches discovered places with two-pass Tavily research.
-    Results sorted by research quality score (best-researched first).
-    """
+
     if state.get("discovery_status") not in ["success"]:
         return {
             **state,

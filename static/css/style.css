@@ -732,6 +732,7 @@ body {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin-right: 4px;
 }
 
 /* ---- Cards Grid ---- */
@@ -789,7 +790,7 @@ body {
 
 .rec-card-inner {
   display: flex;
-  gap: 0;
+  flex-direction: column;
 }
 
 /* Rank badge on the left */

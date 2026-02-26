@@ -1,15 +1,4 @@
-"""
-Node 4: Recommender Agent
-Takes the researched places and uses an LLM (Google Gemini) to synthesize
-the Tavily research into a final "Top 5" recommendation list with rich summaries.
 
-Each recommendation includes:
-- Why it's recommended
-- Highlights from Reddit/blog reviews
-- Best time to visit / what to order
-- Distance from user
-- Source links
-"""
 
 import os
 import json
@@ -29,7 +18,7 @@ Your recommendations should feel like advice from a knowledgeable local friend â
 Focus on:
 - What makes each place genuinely special or unique
 - Real sentiment from reviews (honest positives AND any notable negatives)
-- Practical tips (best dishes, peak hours, hidden gems, price range vibes)
+- Practical tips (best dishes, peak hours, hidden gems)
 - Why it ranks where it does
 
 Format your response ONLY as a valid JSON array with exactly {top_n} objects.
@@ -40,9 +29,9 @@ Each object must have these exact keys:
   "tagline": "A compelling one-liner about this place",
   "why_visit": "2-3 sentences on what makes it special and why you're recommending it",
   "highlights": ["bullet 1", "bullet 2", "bullet 3"],
-  "reddit_says": "Summarize what Reddit users are saying in a conversational way, starting with phrases like 'Reddit users rave about...', 'According to Reddit...', 'Redditors recommend...', or 'Reddit users mention...'. Include specific details from Reddit discussions if available. If no Reddit data, say 'Limited Reddit discussions, but review sites are positive.'",
+  "web_says": "Provide a 5-line summary of the general web consensus (blogs, Yelp, TripAdvisor). Mention specific recurring praise or common complaints found in the research data.",
+  "reddit_says": "Write a conversational 5-line summary of Reddit discussions. Start with phrases like 'Reddit users rave about...' or 'According to local subreddits...'. Include at least 3 specific mentions of dishes, deals, or 'insider' opinions found in the threads.",
   "best_for": "e.g. 'Date nights, craft beer enthusiasts, groups'",
-  "price_vibe": "$ to $$$$",
   "insider_tip": "A specific practical tip based on the research data",
   "distance": "X.X km away",
   "address": "address string or empty",
@@ -75,6 +64,7 @@ Phone: {place.get('phone', 'Not listed')}
 Opening Hours: {place.get('opening_hours', 'Not listed')}
 Research Score: {place.get('research_score', 0):.2f}
 Sources Found: {place.get('source_count', 0)} ({', '.join(set(r.get('source_type','') for r in place.get('research_results', [])))})
+Web Summary: {place.get('web_summary', 'No web data available')}
 Reddit Summary: {reddit_summary if reddit_summary else 'No Reddit data found'}
 Research Summary: {place.get('research_summary', 'No research data available')}
 """
@@ -95,19 +85,7 @@ Now provide the Top {top_n} recommendations as a JSON array:"""
 
 
 def run_recommender_agent(state: dict) -> dict:
-    """
-    Main agent function. Uses Google Gemini to synthesize research into Top 5 recommendations.
-
-    Expected state keys:
-      - researched_places: enriched place list from research agent
-      - query: original user query
-      - location_name: human-readable location name
-      - research_status: should be "success"
-
-    Returns updated state with:
-      - recommendations: list of top 5 structured recommendation dicts
-      - recommender_status: "success" or "failed"
-    """
+    
     if state.get("research_status") not in ["success"]:
         places = state.get("discovered_places", [])
         if not places:
@@ -154,7 +132,7 @@ def run_recommender_agent(state: dict) -> dict:
             system_instruction=system_msg
         )
 
-        logger.info("Calling Gemini 2.5 Flash for final recommendations...")
+        logger.info("Calling Gemini 2.5 Flash Lite for final recommendations...")
 
         # Retry once on 429 quota errors before falling back
         last_exc = None
@@ -218,7 +196,7 @@ def run_recommender_agent(state: dict) -> dict:
             "recommendations": recommendations[:TOP_N],
             "recommender_status": "success",
             "total_analyzed": len(places),
-            "llm_model": "gemini-2.5-flash"
+            "llm_model": "gemini-2.5-flash-lite"
         }
 
     except json.JSONDecodeError as e:
@@ -237,31 +215,27 @@ def build_fallback_recommendations(state: dict, places: list[dict], query: str, 
     recommendations = []
     for i, place in enumerate(places[:TOP_N]):
         summary = place.get("research_summary", "Highly rated local spot worth visiting.")
+        web_summary = place.get("web_summary", "")
         reddit_summary = place.get("reddit_summary", "")
         
-        # Better text truncation - cut at sentence or phrase boundaries
         def smart_truncate(text, max_length):
             if not text or len(text) <= max_length:
                 return text
-            # Try to cut at sentence end
             truncated = text[:max_length]
             last_period = truncated.rfind('.')
             last_exclaim = truncated.rfind('!')
             last_question = truncated.rfind('?')
             best_cut = max(last_period, last_exclaim, last_question)
-            if best_cut > max_length * 0.6:  # If we found a sentence end in the latter part
+            if best_cut > max_length * 0.6:  
                 return text[:best_cut + 1].strip()
-            # Otherwise cut at last space
             last_space = truncated.rfind(' ')
             if last_space > 0:
                 return truncated[:last_space].strip() + "..."
             return truncated + "..."
         
-        # Extract better insights from research
         amenity = place.get('amenity', 'place').replace('_', ' ').title()
         distance = place.get('distance_km', '?')
         
-        # Build better highlights
         highlights = []
         if distance != '?':
             highlights.append(f"Just {distance} km from your location")
@@ -277,19 +251,24 @@ def build_fallback_recommendations(state: dict, places: list[dict], query: str, 
         else:
             highlights.append("Local favorite")
         
-        # Better Reddit handling with conversational style
         if reddit_summary:
-            # Smart truncate the reddit summary
             truncated_reddit = smart_truncate(reddit_summary, 300)
-            # Add conversational prefix
             if len(truncated_reddit) > 20:
                 reddit_text = f"Reddit users mention: {truncated_reddit}"
             else:
                 reddit_text = truncated_reddit
         else:
             reddit_text = "Limited Reddit discussions found. Check Yelp and TripAdvisor for more community reviews."
+            
+        if web_summary:
+            truncated_web = smart_truncate(web_summary, 300)
+            if len(truncated_web) > 20:
+                web_text = f"Reviewers say: {truncated_web}"
+            else:
+                web_text = truncated_web
+        else:
+            web_text = "No additional web reviews found."
         
-        # Better insider tip based on amenity type
         insider_tips = {
             'restaurant': "Call ahead for reservations, especially on weekends.",
             'bar': "Check happy hour specials and live music schedules.",
@@ -308,9 +287,9 @@ def build_fallback_recommendations(state: dict, places: list[dict], query: str, 
             "tagline": f"A popular {amenity.lower()} in {location_name.split(',')[0]}",
             "why_visit": smart_truncate(summary, 350),
             "highlights": highlights,
+            "web_says": web_text,
             "reddit_says": reddit_text,
             "best_for": f"Those looking for {query.split()[0] if query else 'great local experiences'}",
-            "price_vibe": "$$",
             "insider_tip": insider_tip,
             "distance": f"{distance} km away",
             "address": place.get("address", ""),
