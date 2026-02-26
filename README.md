@@ -8,7 +8,7 @@
 
 ## ✨ Features
 
-- 🌍 **Automatic geolocation** — browser GPS or silent IP fallback
+- 🌍 **Automatic geolocation** — browser GPS or silent IP fallback 
 - 🗺️ **OpenStreetMap discovery** — scans real nearby places via Overpass API
 - 🔴 **Reddit deep-dive** — surfaces what locals actually say on reddit.com
 - 🌐 **Web research** — aggregates reviews from Yelp, TripAdvisor, travel blogs & editorial sites
@@ -24,7 +24,7 @@ The app runs a **4-agent pipeline**:
 
 | Agent | What it does |
 |---|---|
-| **Geolocation Agent** | Detects your city/coordinates via browser GPS or IP lookup |
+| **Geolocation Agent** | Detects your city/coordinates via browser GPS or IP lookup but gives preference if you mention place in your query |
 | **Discovery Agent** | Queries OpenStreetMap/Overpass API to find relevant nearby places |
 | **Research Agent** | Uses **Tavily AI** to deep-search Reddit + web reviews for each place |
 | **Recommender Agent** | Uses **Google Gemini** to rank and write structured Top 5 recommendations |
@@ -46,7 +46,10 @@ Each recommendation card shows:
 - **Source links** — clickable citations
 
 ---
+##  🛠️ Architecture
+![AI Architecture](results/Agentic Pipeline for User-2026-02-26-163433.svg)
 
+---
 ## 🛠️ Setup & Installation
 
 ### Prerequisites
@@ -126,7 +129,6 @@ Find-Your-Place/
 ```
 
 ---
-
 ## 🧪 Testing
 
 Run the built-in test suite to verify agents are working:
